@@ -207,7 +207,7 @@ impl Invoice {
 
             pdf.layer.use_text(
                 "DIČ",
-                Mm(10.0).0,
+                10.0,
                 position.0,
                 position.1 - (Mm(6.0) + pdf.line_height * 7.0),
                 &pdf.font.font,
@@ -217,8 +217,8 @@ impl Invoice {
 
             pdf.layer.use_text(
                 vat,
-                Mm(10.0).0,
-                position.0 + max_position - calculate_text_width(vat, pdf),
+                10.0,
+                max_position - calculate_text_width(vat, pdf),
                 position.1 - (Mm(6.0) + pdf.line_height * 7.0),
                 &pdf.font.font,
             );
