@@ -1,6 +1,7 @@
 use std::fmt::Display;
 
 use crate::{
+    accounting,
     entity::{Entity, EntityType},
     payment_method::PaymentMethod,
     pdf::{calculate_text_width, PdfData, PdfFont},
@@ -8,10 +9,19 @@ use crate::{
 };
 use azul_text_layout::text_shaping::get_font_metrics_freetype;
 use chrono::NaiveDate;
-use iban::Iban;
-use printpdf::{Color, Line, Mm, PdfDocument, PdfDocumentReference, Point, Rgb, TextRenderingMode};
-use rust_decimal::Decimal;
+use fast_qr::{
+    convert::{image::ImageBuilder, svg::SvgBuilder, Builder, Shape},
+    qr, QRCode,
+};
+use iban::{Iban, IbanLike};
+use iso_currency::Currency;
+use printpdf::{
+    image_crate::ImageDecoder, Color, ColorBits, ColorSpace, Image, ImageTransform, ImageXObject, Line, Mm, PdfDocument, PdfDocumentReference, Point, Pt, Px, Rgb, SvgTransform, TextRenderingMode
+};
+use rust_decimal::{prelude::FromPrimitive, Decimal};
+use rust_decimal_macros::dec;
 use serde::Serialize;
+use spayd::Spayd;
 
 #[derive(Debug, Serialize)]
 pub enum InvoiceItemType {
@@ -53,6 +63,18 @@ impl InvoiceItem {
             price_per_unit,
         }
     }
+
+    pub fn price(&self) -> Decimal {
+        match &self.item_type {
+            InvoiceItemType::Hours(time) => {
+                Decimal::from_f64(time.hour_multiplicator()).unwrap() * self.price_per_unit
+            }
+            InvoiceItemType::Quantity(quantity) => {
+                Decimal::from_u32(*quantity).unwrap() * self.price_per_unit
+            }
+            InvoiceItemType::Other(_) => self.price_per_unit,
+        }
+    }
 }
 
 #[derive(Debug)]
@@ -64,6 +86,8 @@ pub struct Invoice {
     items: Vec<InvoiceItem>,
     date: NaiveDate,
     due_date: NaiveDate,
+    currency: Currency,
+    note: Option<String>,
 }
 
 impl Invoice {
@@ -75,6 +99,8 @@ impl Invoice {
         items: Vec<InvoiceItem>,
         date: NaiveDate,
         due_date: NaiveDate,
+        currency: Currency,
+        note: Option<String>,
     ) -> Self {
         Self {
             number,
@@ -84,6 +110,8 @@ impl Invoice {
             items,
             date,
             due_date,
+            currency,
+            note,
         }
     }
 }
@@ -197,7 +225,7 @@ impl Invoice {
         pdf.layer.use_text(
             &identifier,
             Mm(10.0).0,
-            max_position - calculate_text_width(&identifier, pdf),
+            max_position - calculate_text_width(&identifier, pdf, 10.0),
             position.1 - (Mm(6.0) + pdf.line_height * 6.0),
             &pdf.font.font,
         );
@@ -218,7 +246,7 @@ impl Invoice {
             pdf.layer.use_text(
                 vat,
                 10.0,
-                max_position - calculate_text_width(vat, pdf),
+                max_position - calculate_text_width(vat, pdf, 10.0),
                 position.1 - (Mm(6.0) + pdf.line_height * 7.0),
                 &pdf.font.font,
             );
@@ -280,33 +308,405 @@ impl Invoice {
                 pdf.layer.use_text(
                     &bank_account,
                     10.0,
-                    max_position - calculate_text_width(&bank_account, pdf),
+                    max_position - calculate_text_width(&bank_account, pdf, 10.0),
                     position.1 - pdf.line_height,
                     &pdf.font.font,
                 );
                 pdf.layer.use_text(
                     var_symbol,
                     10.0,
-                    max_position - calculate_text_width(var_symbol, pdf),
+                    max_position - calculate_text_width(var_symbol, pdf, 10.0),
                     position.1 - pdf.line_height * 2.0,
                     &pdf.font.font,
                 );
                 pdf.layer.use_text(
                     r#type,
                     10.0,
-                    max_position - calculate_text_width(r#type, pdf),
+                    max_position - calculate_text_width(r#type, pdf, 10.0),
                     position.1 - pdf.line_height * 3.0,
                     &pdf.font.font,
                 );
             }
         }
 
-        (Mm(0.0), Mm(0.0))
+        (max_position, pdf.line_height * 3.0)
+    }
+
+    pub fn pdf_draw_dates(
+        invoice_date: &NaiveDate,
+        due_date: &NaiveDate,
+        pdf: &PdfData,
+        max_position: Mm,
+        position: (Mm, Mm),
+    ) -> (Mm, Mm) {
+        pdf.layer.set_fill_color(pdf.gray.clone());
+
+        pdf.layer.use_text(
+            "Datum vystavení",
+            10.0,
+            position.0,
+            position.1 - pdf.line_height,
+            &pdf.font.font,
+        );
+
+        pdf.layer.use_text(
+            "Datum splatnosti",
+            10.0,
+            position.0,
+            position.1 - pdf.line_height * 2.0,
+            &pdf.font.font,
+        );
+
+        pdf.layer.set_fill_color(pdf.black.clone());
+
+        let fmt = "%d. %m. %Y";
+        let invoice_date = invoice_date.format(fmt).to_string();
+        let due_date = due_date.format(fmt).to_string();
+
+        pdf.layer.use_text(
+            &invoice_date,
+            10.0,
+            max_position - calculate_text_width(&invoice_date, pdf, 10.0),
+            position.1 - pdf.line_height,
+            &pdf.font.font,
+        );
+
+        pdf.layer.use_text(
+            &due_date,
+            10.0,
+            max_position - calculate_text_width(&due_date, pdf, 10.0),
+            position.1 - pdf.line_height * 2.0,
+            &pdf.font.font,
+        );
+
+        (max_position, pdf.line_height * 2.0)
+    }
+
+    pub fn pdf_draw_items(
+        items: &Vec<InvoiceItem>,
+        currency: Currency,
+        price_total: Decimal,
+        pdf: &PdfData,
+        max_position: Mm,
+        position: (Mm, Mm),
+    ) -> (Mm, Mm) {
+        let padding_y = pdf.line_height * 4.0;
+
+        let line = Line {
+            points: vec![
+                (Point::new(position.0, position.1 - padding_y), false),
+                (Point::new(max_position, position.1 - padding_y), false),
+            ],
+            is_closed: true,
+        };
+
+        pdf.layer.set_fill_color(pdf.light_gray.clone());
+        pdf.layer.set_outline_color(pdf.light_gray.clone());
+
+        pdf.layer.set_outline_thickness(0.0);
+
+        pdf.layer.add_line(line);
+
+        let mut max_price = dec!(0.0);
+        let mut max_price_per_unit = dec!(0.0);
+
+        let mut longest_count = String::new();
+
+        for item in items {
+            let price_per_unit = item.price_per_unit;
+            let price = item.price();
+
+            max_price = max_price.max(price);
+            max_price_per_unit = max_price_per_unit.max(price_per_unit);
+
+            match &item.item_type {
+                InvoiceItemType::Hours(x) => {
+                    let count = x.hour_multiplicator().to_string();
+                    if count.len() > longest_count.len() {
+                        longest_count = count;
+                    }
+                }
+                InvoiceItemType::Quantity(x) => {
+                    let count = x.to_string();
+                    if count.len() > longest_count.len() {
+                        longest_count = count;
+                    }
+                }
+                _ => {}
+            };
+        }
+
+        let ac = accounting::create_accounting_from_currency(currency);
+
+        let max_price = ac.format_money(max_price);
+
+        let max_price_per_unit = ac.format_money(max_price_per_unit);
+
+        let table_font_size = 9.2;
+
+        let max_price_width = calculate_text_width(&max_price, pdf, table_font_size);
+        let max_price_per_unit_width =
+            calculate_text_width(&max_price_per_unit, pdf, table_font_size);
+
+        let gap = Mm(5.0);
+
+        let total_price_string = "CELKEM";
+        let price_per_unit_string = "CENA ZA MJ";
+
+        let total_price_width = calculate_text_width(&total_price_string, pdf, table_font_size);
+        let price_per_unit_width =
+            calculate_text_width(&price_per_unit_string, pdf, table_font_size);
+
+        pdf.layer.set_fill_color(pdf.gray.clone());
+        pdf.layer.set_outline_color(pdf.gray.clone());
+
+        pdf.layer.use_text(
+            total_price_string,
+            table_font_size,
+            max_position - total_price_width,
+            position.1 - padding_y + pdf.line_height * 0.5,
+            &pdf.font.font,
+        );
+
+        pdf.layer.use_text(
+            price_per_unit_string,
+            table_font_size,
+            max_position - total_price_width - max_price_width - price_per_unit_width - gap,
+            position.1 - padding_y + pdf.line_height * 0.5,
+            &pdf.font.font,
+        );
+
+        pdf.layer.set_fill_color(pdf.black.clone());
+        pdf.layer.set_outline_color(pdf.black.clone());
+
+        let count_offset = calculate_text_width(&longest_count, pdf, table_font_size);
+
+        let mut y_offset = pdf.line_height;
+
+        for item in items {
+            match &item.item_type {
+                InvoiceItemType::Hours(time) => {
+                    let time = time.hour_multiplicator();
+                    let label = "hod";
+
+                    pdf.layer.use_text(
+                        &time.to_string(),
+                        table_font_size,
+                        position.0,
+                        position.1 - padding_y - y_offset,
+                        &pdf.font.font,
+                    );
+
+                    pdf.layer.use_text(
+                        label,
+                        table_font_size,
+                        position.0 + count_offset + gap,
+                        position.1 - padding_y - y_offset,
+                        &pdf.font.font,
+                    );
+                }
+                InvoiceItemType::Quantity(quantity) => {
+                    pdf.layer.use_text(
+                        &quantity.to_string(),
+                        table_font_size,
+                        position.0,
+                        position.1 - padding_y - y_offset,
+                        &pdf.font.font,
+                    );
+
+                    pdf.layer.use_text(
+                        "ks",
+                        table_font_size,
+                        position.0 + count_offset + gap,
+                        position.1 - padding_y - y_offset,
+                        &pdf.font.font,
+                    );
+                }
+                InvoiceItemType::Other(other) => {
+                    pdf.layer.use_text(
+                        other,
+                        table_font_size,
+                        position.0,
+                        position.1 - padding_y - y_offset,
+                        &pdf.font.font,
+                    );
+                }
+            }
+
+            let description_length = calculate_text_width(&item.description, pdf, table_font_size);
+
+            pdf.layer.begin_text_section();
+
+            pdf.layer.set_font(&pdf.font.font, table_font_size);
+            pdf.layer.set_line_height(12.0);
+
+            pdf.layer.set_text_cursor(
+                position.0 + count_offset + gap * 3.0,
+                position.1 - padding_y - y_offset,
+            );
+
+            let start = position.0 + count_offset + gap * 3.0;
+            let end = max_position
+                - total_price_width
+                - max_price_width
+                - price_per_unit_width
+                - gap * 4.0;
+
+            let threshold = end - start;
+
+            let mut add_offsets = Mm(0.0);
+
+            if description_length > threshold {
+                let mut new_description = String::new();
+
+                for word in item.description.split(' ') {
+                    new_description.push_str(word);
+                    new_description.push(' ');
+
+                    let accumulated_length =
+                        calculate_text_width(&new_description, pdf, table_font_size);
+
+                    if accumulated_length >= threshold {
+                        pdf.layer.write_text(&new_description, &pdf.font.font);
+                        pdf.layer.add_line_break();
+                        add_offsets += pdf.line_height;
+
+                        new_description.clear();
+                    }
+                }
+                if !new_description.is_empty() {
+                    pdf.layer.write_text(&new_description, &pdf.font.font);
+                }
+            } else {
+                pdf.layer.write_text(&item.description, &pdf.font.font);
+            }
+
+            pdf.layer.end_text_section();
+
+            let price_per_unit = ac.format_money(item.price_per_unit);
+
+            let price_per_unit_width = calculate_text_width(&price_per_unit, pdf, table_font_size);
+
+            pdf.layer.use_text(
+                price_per_unit,
+                table_font_size,
+                max_position - total_price_width - max_price_width - price_per_unit_width - gap,
+                position.1 - padding_y - y_offset,
+                &pdf.font.font,
+            );
+
+            let price = ac.format_money(item.price());
+
+            let price_width = calculate_text_width(&price, pdf, table_font_size);
+
+            pdf.layer.use_text(
+                price,
+                table_font_size,
+                max_position - price_width,
+                position.1 - padding_y - y_offset,
+                &pdf.font.font,
+            );
+
+            y_offset += pdf.line_height * 1.25 + add_offsets;
+        }
+
+        let line = Line {
+            points: vec![
+                (
+                    Point::new(
+                        position.0,
+                        position.1 - padding_y - y_offset + pdf.line_height,
+                    ),
+                    false,
+                ),
+                (
+                    Point::new(
+                        max_position,
+                        position.1 - padding_y - y_offset + pdf.line_height,
+                    ),
+                    false,
+                ),
+            ],
+            is_closed: false,
+        };
+
+        pdf.layer.set_line_height(pdf.line_height.0);
+
+        pdf.layer.set_fill_color(pdf.light_gray.clone());
+        pdf.layer.set_outline_color(pdf.light_gray.clone());
+
+        pdf.layer.set_outline_thickness(0.0);
+
+        pdf.layer.add_line(line);
+
+        let line = Line {
+            points: vec![
+                (
+                    Point::new(
+                        (max_position - position.0) / 2.0,
+                        position.1 - padding_y - y_offset - pdf.line_height * 1.0,
+                    ),
+                    false,
+                ),
+                (
+                    Point::new(
+                        max_position,
+                        position.1 - padding_y - y_offset - pdf.line_height * 1.0,
+                    ),
+                    false,
+                ),
+            ],
+            is_closed: false,
+        };
+
+        pdf.layer.set_fill_color(pdf.black.clone());
+        pdf.layer.set_outline_color(pdf.black.clone());
+
+        pdf.layer.set_outline_thickness(1.5);
+
+        pdf.layer.add_line(line);
+
+        let total_price = ac.format_money(price_total);
+
+        pdf.layer.use_text(
+            &total_price,
+            16.0,
+            max_position - calculate_text_width(&total_price, pdf, 16.0),
+            position.1 - padding_y - y_offset - pdf.line_height * 2.4,
+            &pdf.font_bold.font,
+        );
+
+        (
+            max_position,
+            position.1 - padding_y - y_offset - pdf.line_height * 2.4,
+        )
+    }
+
+    pub fn pdf_draw_spayd(qr_code: String, pdf: &PdfData, position: (Mm, Mm)) {
+        let mut image = printpdf::Svg::parse(&qr_code).unwrap();
+        image.width = Px(800);
+        image.height = Px(800);
+
+        let y_offset = position.1.into_pt() - image.height.into_pt(300.0) / 3.0 * 2.0;
+
+        image.add_to_layer(&pdf.layer, SvgTransform {
+            translate_x: Some(position.0.into_pt()),
+            translate_y: Some(y_offset),
+            rotate: None,
+            scale_x: None,
+            scale_y: None,
+            dpi: Some(300.0),
+        });
     }
 }
 
 impl From<Invoice> for PdfDocumentReference {
     fn from(value: Invoice) -> Self {
+        let price_total = value
+            .items
+            .iter()
+            .fold(dec!(0.0), |acc, item| acc + item.price());
+
         let (document, page1, layer1) =
             PdfDocument::new("Faktura", Mm(210.0), Mm(297.0), "Layer 1");
 
@@ -340,12 +740,14 @@ impl From<Invoice> for PdfDocumentReference {
 
         let black = Color::Rgb(Rgb::new(0.0, 0.0, 0.0, None));
         let gray = Color::Rgb(Rgb::new(90.0 / 256.0, 90.0 / 256.0, 90.0 / 256.0, None));
+        let light_gray = Color::Rgb(Rgb::new(200.0 / 256.0, 200.0 / 256.0, 200.0 / 256.0, None));
 
         let pdf_data = PdfData {
             document: &document,
             layer: &layer,
             black: &black,
             gray: &gray,
+            light_gray: &light_gray,
             font: &pdf_font_noto,
             font_bold: &pdf_font_noto_bold,
             line_height: Mm(5.0),
@@ -388,12 +790,55 @@ impl From<Invoice> for PdfDocumentReference {
 
         y -= contractor_rect.1.max(client_rect.1) + pdf_data.line_height;
 
-        Invoice::pdf_draw_payment_method(
+        let (_, payment_method_h) = Invoice::pdf_draw_payment_method(
             &value.payment_method,
             &pdf_data,
             left_half_max,
             (left_half, y),
         );
+
+        let (_, dates_h) = Invoice::pdf_draw_dates(
+            &value.date,
+            &value.due_date,
+            &pdf_data,
+            right_half_max,
+            (right_half, y),
+        );
+
+        y -= dates_h.max(payment_method_h);
+
+        let (_, items_h) = Invoice::pdf_draw_items(
+            &value.items,
+            value.currency,
+            price_total,
+            &pdf_data,
+            right_half_max,
+            (left_half, y),
+        );
+
+        y -= items_h;
+
+        if let PaymentMethod::BankTransfer(iban, symbol) = &value.payment_method {
+            let spayd = Spayd::new_v1_0([
+                (spayd::fields::ACCOUNT, &iban.electronic_str().to_string()),
+                (spayd::fields::AMOUNT, &price_total.to_string()),
+                (spayd::fields::CURRENCY, &value.currency.code().to_string()),
+                ("X-VS", symbol),
+            ]);
+
+            if let Ok(qr) = qr::QRBuilder::new(spayd.to_string()).build() {
+                let img = SvgBuilder::default()
+                    .shape(Shape::RoundedSquare)
+                    .background_color([255, 255, 255, 0])
+                    .to_str(&qr);
+
+                Invoice::pdf_draw_spayd(img, &pdf_data, (left_half, y));
+            }
+
+            if let Some(note) = value.note {
+                pdf_data.layer.use_text(note, 8.0, left_half, Mm(6.0), &pdf_data.font.font);
+            }
+        }
 
         document
     }

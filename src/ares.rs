@@ -3,47 +3,47 @@ use serde::{Deserialize, Serialize};
 use crate::{address::Address, entity::Entity, registration_number::RegistrationNumber};
 use std::io::Read;
 
-#[derive(Debug, Serialize, Deserialize)]
-pub struct AresListOfRegistrations {
-    #[serde(rename = "stavZdrojeVr")]
-    vr: String,
-
-    #[serde(rename = "stavZdrojeRes")]
-    res: String,
-
-    #[serde(rename = "stavZdrojeRzp")]
-    rzp: String,
-
-    #[serde(rename = "stavZdrojeNrpzs")]
-    nrpzs: String,
-
-    #[serde(rename = "stavZdrojeRpsh")]
-    rpsh: String,
-
-    #[serde(rename = "stavZdrojeRcns")]
-    rcns: String,
-
-    #[serde(rename = "stavZdrojeSzr")]
-    szr: String,
-
-    #[serde(rename = "stavZdrojeDph")]
-    dph: String,
-
-    #[serde(rename = "stavZdrojeSd")]
-    sd: String,
-
-    #[serde(rename = "stavZdrojeIr")]
-    ir: String,
-
-    #[serde(rename = "stavZdrojeCeu")]
-    ceu: String,
-
-    #[serde(rename = "stavZdrojeRs")]
-    rs: String,
-
-    #[serde(rename = "stavZdrojeRed")]
-    red: String,
-}
+// #[derive(Debug, Serialize, Deserialize)]
+// pub struct AresListOfRegistrations {
+//     #[serde(rename = "stavZdrojeVr")]
+//     vr: String,
+//
+//     #[serde(rename = "stavZdrojeRes")]
+//     res: String,
+//
+//     #[serde(rename = "stavZdrojeRzp")]
+//     rzp: String,
+//
+//     #[serde(rename = "stavZdrojeNrpzs")]
+//     nrpzs: String,
+//
+//     #[serde(rename = "stavZdrojeRpsh")]
+//     rpsh: String,
+//
+//     #[serde(rename = "stavZdrojeRcns")]
+//     rcns: String,
+//
+//     #[serde(rename = "stavZdrojeSzr")]
+//     szr: String,
+//
+//     #[serde(rename = "stavZdrojeDph")]
+//     dph: String,
+//
+//     #[serde(rename = "stavZdrojeSd")]
+//     sd: String,
+//
+//     #[serde(rename = "stavZdrojeIr")]
+//     ir: String,
+//
+//     #[serde(rename = "stavZdrojeCeu")]
+//     ceu: String,
+//
+//     #[serde(rename = "stavZdrojeRs")]
+//     rs: String,
+//
+//     #[serde(rename = "stavZdrojeRed")]
+//     red: String,
+// }
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct AresSidlo {
@@ -90,7 +90,7 @@ pub struct AresSidlo {
     text_address: String,
 
     #[serde(rename = "typCisloDomovni")]
-    house_number_type: String,
+    house_number_type: u32,
 
     #[serde(rename = "standardizaceAdresy")]
     address_normalized: bool,
@@ -124,30 +124,28 @@ pub struct AresResponse {
     #[serde(rename = "sidlo")]
     office: AresSidlo,
 
-    #[serde(rename = "pravniForma")]
-    legal_form: String,
+    // #[serde(rename = "pravniForma")]
+    // legal_form: String,
 
-    #[serde(rename = "financniUrad")]
-    tax_office: String,
+    // #[serde(rename = "financniUrad")]
+    // tax_office: String,
 
-    #[serde(rename = "datumVzniku")]
-    created_at: String,
+    // #[serde(rename = "datumVzniku")]
+    // created_at: String,
 
-    #[serde(rename = "datumAktualizace")]
-    updated_at: String,
+    // #[serde(rename = "datumAktualizace")]
+    // updated_at: String,
 
-    #[serde(rename = "icoId")]
-    registration_number_id: String,
-
+    // #[serde(rename = "icoId")]
+    // registration_number_id: String,
     #[serde(rename = "adresaDorucovaci")]
     address: AresAdresa,
 
-    #[serde(rename = "seznamRegistraci")]
-    list_of_registrations: AresListOfRegistrations,
+    // #[serde(rename = "seznamRegistraci")]
+    // list_of_registrations: AresListOfRegistrations,
 
-    #[serde(rename = "czNace")]
-    nace: Vec<String>,
-
+    // #[serde(rename = "czNace")]
+    // nace: Vec<String>,
     dic: Option<String>,
 }
 

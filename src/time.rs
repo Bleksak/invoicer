@@ -15,4 +15,8 @@ impl Time {
     pub fn minutes(&self) -> u32 {
         self.1
     }
+
+    pub fn hour_multiplicator(&self) -> f64 {
+        self.hours() as f64 + self.minutes() as f64 / 60.0
+    }
 }

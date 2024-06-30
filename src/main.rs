@@ -4,6 +4,7 @@ use chrono::{DateTime, Duration, Local, NaiveDate, Utc};
 use entity::Entity;
 use iban::Iban;
 use invoice::{Invoice, InvoiceItem, InvoiceItemType};
+use iso_currency::Currency;
 use printpdf::PdfDocumentReference;
 use registration_number::RegistrationNumber;
 use rust_decimal_macros::dec;
@@ -17,6 +18,7 @@ mod payment_method;
 mod pdf;
 mod registration_number;
 mod time;
+mod accounting;
 
 fn main() {
     dotenvy::dotenv().unwrap();
@@ -45,16 +47,41 @@ fn main() {
         contractor,
         client,
         payment_method::PaymentMethod::BankTransfer(iban, "202403".to_string()),
-        vec![InvoiceItem::new(
-            InvoiceItemType::Hours(Time::new(1, 30)),
-            "Programování SmartEmalingu".to_string(),
-            dec!(350.0),
-        )],
+        vec![
+            InvoiceItem::new(
+                InvoiceItemType::Hours(Time::new(1, 30)),
+                "SE2024 - Programování SmartEmalingu Prosinec, smrdi mi pantofle".to_string(),
+                dec!(350.0),
+            ),
+            InvoiceItem::new(
+                InvoiceItemType::Hours(Time::new(1, 30)),
+                "SE2024 - Programování SmartEmalingu Za mesic Prosinec, smrdi mi pantofle".to_string(),
+                dec!(350.0),
+            ),
+            InvoiceItem::new(
+                InvoiceItemType::Quantity(30),
+                "SE2024 - Programování SmartEmalingu Pomoci PHP Za mesic Prosinec, smrdi mi pantofle".to_string(),
+                dec!(3500.0),
+            ),
+            InvoiceItem::new(
+                InvoiceItemType::Hours(Time::new(1, 30)),
+                "SE2024 - Programování SmartEmalingu Prosinec, smrdi mi pantofle".to_string(),
+                dec!(350.0),
+            ),
+            InvoiceItem::new(
+                InvoiceItemType::Hours(Time::new(1, 30)),
+                "SE2024 - Programování SmartEmalingu Pomoci PHP Za mesic Prosinec, smrdi mi pantofle".to_string(),
+                dec!(350.0),
+            ),
+        ],
         today,
         due_date,
+        Currency::CZK,
+        Some("Fyzická osoba zapsaná v živnostenském rejstříku MěÚ Prachatice.".to_string())
     );
 
     let pdf: PdfDocumentReference = invoice.into();
+
     let file = File::create("example.pdf").unwrap();
     let mut writer = BufWriter::new(file);
     pdf.save(&mut writer).unwrap();
