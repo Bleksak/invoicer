@@ -15,7 +15,7 @@ impl Display for PaymentMethod {
         match self {
             PaymentMethod::Cash => write!(f, "Hotově"),
             PaymentMethod::Card(card_number) => write!(f, "Platbení kartou: {}", card_number),
-            PaymentMethod::BankTransfer(iban, var_symbol) => write!(f, "Bankovním převodem: {}", iban.to_string()),
+            PaymentMethod::BankTransfer(iban, _) => write!(f, "Bankovním převodem: {}", iban.to_string()),
         }
     }
 }

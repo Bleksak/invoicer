@@ -10,13 +10,13 @@ use crate::{
 use azul_text_layout::text_shaping::get_font_metrics_freetype;
 use chrono::NaiveDate;
 use fast_qr::{
-    convert::{image::ImageBuilder, svg::SvgBuilder, Builder, Shape},
-    qr, QRCode,
+    convert::{svg::SvgBuilder, Builder, Shape},
+    qr,
 };
 use iban::{Iban, IbanLike};
 use iso_currency::Currency;
 use printpdf::{
-    image_crate::ImageDecoder, Color, ColorBits, ColorSpace, Image, ImageTransform, ImageXObject, Line, Mm, PdfDocument, PdfDocumentReference, Point, Pt, Px, Rgb, SvgTransform, TextRenderingMode
+    Color, Line, Mm, PdfDocument, PdfDocumentReference, Point, Px, Rgb, SvgTransform, TextRenderingMode
 };
 use rust_decimal::{prelude::FromPrimitive, Decimal};
 use rust_decimal_macros::dec;
@@ -440,13 +440,13 @@ impl Invoice {
 
         let max_price = ac.format_money(max_price);
 
-        let max_price_per_unit = ac.format_money(max_price_per_unit);
+        // let max_price_per_unit = ac.format_money(max_price_per_unit);
 
         let table_font_size = 9.2;
 
         let max_price_width = calculate_text_width(&max_price, pdf, table_font_size);
-        let max_price_per_unit_width =
-            calculate_text_width(&max_price_per_unit, pdf, table_font_size);
+        // let max_price_per_unit_width =
+        //     calculate_text_width(&max_price_per_unit, pdf, table_font_size);
 
         let gap = Mm(5.0);
 

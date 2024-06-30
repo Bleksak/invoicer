@@ -1,8 +1,5 @@
 use azul_text_layout::text_layout::FontMetrics;
-use azul_text_layout::{
-    text_layout::{split_text_into_words, words_to_scaled_words},
-    text_shaping::get_font_metrics_freetype,
-};
+use azul_text_layout::text_layout::{split_text_into_words, words_to_scaled_words};
 use printpdf::{Color, IndirectFontRef, Mm, PdfDocumentReference, PdfLayerReference, Pt};
 
 pub struct PdfFont<'bytes> {
@@ -30,7 +27,7 @@ pub fn calculate_text_width(text: &str, pdf_data: &PdfData, font_size: f32) -> M
         pdf_data.font.bytes,
         pdf_data.font.index,
         pdf_data.font.metrics,
-        font_size
+        font_size,
     );
 
     let total_width: f32 = (scaled_words.items.len() - 1) as f32 * scaled_words.space_advance_px
