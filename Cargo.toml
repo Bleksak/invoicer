@@ -1,9 +1,9 @@
 [package]
-name = "invoicer"
+name = "invoicero"
 version = "0.1.0"
 edition = "2021"
 description = "Crate for generating cz/sk invoices"
-keywords = ["invoice", "czech", "ares"]
+keywords = ["invoice", "czech", "ares", "finance"]
 license = "MIT"
 homepage = "https://github.com/Bleksak/invoicer"
 repository = "https://github.com/Bleksak/invoicer"
