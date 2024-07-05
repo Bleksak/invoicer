@@ -82,6 +82,7 @@ pub struct Invoice {
     number: Decimal,
     contractor: Entity,
     client: Entity,
+    iban: Iban,
     payment_method: PaymentMethod,
     items: Vec<InvoiceItem>,
     date: NaiveDate,
@@ -95,6 +96,7 @@ impl Invoice {
         number: Decimal,
         contractor: Entity,
         client: Entity,
+        iban: Iban,
         payment_method: PaymentMethod,
         items: Vec<InvoiceItem>,
         date: NaiveDate,
@@ -106,6 +108,7 @@ impl Invoice {
             number,
             contractor,
             client,
+            iban,
             payment_method,
             items,
             date,
@@ -267,6 +270,7 @@ impl Invoice {
     }
 
     pub fn pdf_draw_payment_method(
+        iban: &Iban,
         payment_method: &PaymentMethod,
         pdf: &PdfData,
         max_position: Mm,
@@ -277,7 +281,7 @@ impl Invoice {
         match payment_method {
             PaymentMethod::Cash => todo!(),
             PaymentMethod::Card(_) => todo!(),
-            PaymentMethod::BankTransfer(iban, var_symbol) => {
+            PaymentMethod::BankTransfer(var_symbol) => {
                 let bank_account = iban.to_bank_account_number();
                 let r#type = "Převodem";
 
@@ -791,6 +795,7 @@ impl From<Invoice> for PdfDocumentReference {
         y -= contractor_rect.1.max(client_rect.1) + pdf_data.line_height;
 
         let (_, payment_method_h) = Invoice::pdf_draw_payment_method(
+            &value.iban,
             &value.payment_method,
             &pdf_data,
             left_half_max,
@@ -818,9 +823,9 @@ impl From<Invoice> for PdfDocumentReference {
 
         y -= items_h;
 
-        if let PaymentMethod::BankTransfer(iban, symbol) = &value.payment_method {
+        if let PaymentMethod::BankTransfer(symbol) = &value.payment_method {
             let spayd = Spayd::new_v1_0([
-                (spayd::fields::ACCOUNT, &iban.electronic_str().to_string()),
+                (spayd::fields::ACCOUNT, &value.iban.electronic_str().to_string()),
                 (spayd::fields::AMOUNT, &price_total.to_string()),
                 (spayd::fields::CURRENCY, &value.currency.code().to_string()),
                 ("X-VS", symbol),

@@ -1,13 +1,12 @@
 use std::fmt::Display;
 
-use iban::Iban;
 use serde::Serialize;
 
 #[derive(Debug, Serialize)]
 pub enum PaymentMethod {
     Cash,
     Card(String),
-    BankTransfer(Iban, String),
+    BankTransfer(String), // variable symbol
 }
 
 impl Display for PaymentMethod {
@@ -15,7 +14,7 @@ impl Display for PaymentMethod {
         match self {
             PaymentMethod::Cash => write!(f, "Hotově"),
             PaymentMethod::Card(card_number) => write!(f, "Platbení kartou: {}", card_number),
-            PaymentMethod::BankTransfer(iban, _) => write!(f, "Bankovním převodem: {}", iban.to_string()),
+            PaymentMethod::BankTransfer(_) => write!(f, "Bankovním převodem: "),
         }
     }
 }
