@@ -1,8 +1,9 @@
 use std::{error::Error, fmt::Display, str::FromStr};
 
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Serialize)]
+/// Representation of czech company registration number(IČO).
+#[derive(Debug, Serialize, Deserialize)]
 pub struct RegistrationNumber(String);
 
 #[derive(Debug)]
@@ -13,7 +14,10 @@ pub enum RegistrationNumberError {
 impl Display for RegistrationNumberError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            RegistrationNumberError::InvalidNumber => write!(f, "Neplatné IČO"),
+            RegistrationNumberError::InvalidNumber => write!(
+                f,
+                "Neplatné IČO"
+            ),
         }
     }
 }
@@ -21,6 +25,7 @@ impl Display for RegistrationNumberError {
 impl Error for RegistrationNumberError {}
 
 impl RegistrationNumber {
+    /// Checks if the Czech registration number is valid.
     fn valid(number: &str) -> Option<()> {
         let control_char = number.chars().last()?;
         let mut calculated_control = 0;
@@ -42,6 +47,7 @@ impl RegistrationNumber {
         Some(())
     }
 
+    /// Returns the registration number as a string.
     pub fn get(&self) -> &str {
         &self.0
     }
@@ -61,8 +67,31 @@ impl FromStr for RegistrationNumber {
             return Err(Self::Err::InvalidNumber);
         }
 
-        Self::valid(&number)
+        Self::valid(number)
             .ok_or(Self::Err::InvalidNumber)
             .map(|_| Self(number.to_string()))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::RegistrationNumber;
+    use super::RegistrationNumberError;
+
+    #[test]
+    fn test_registration_number() {
+        assert!(RegistrationNumber::valid("27082440").is_some());
+        assert!(RegistrationNumber::valid("CZ00000000").is_none());
+    }
+
+    #[test]
+    fn test_registration_number_parse() {
+        let number: Result<RegistrationNumber, RegistrationNumberError> = "27082440".parse();
+
+        assert!(number.is_ok());
+        assert_eq!(
+            number.unwrap().get(),
+            "27082440"
+        );
     }
 }

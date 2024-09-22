@@ -1,0 +1,115 @@
+* {
+  margin: 0;
+  padding: 0;
+}
+
+@page {
+  size: A4;
+  margin: 10mm;
+}
+
+*,
+*:before,
+*:after {
+  box-sizing: border-box;
+}
+
+body {
+  font-family: sans-serif;
+  line-height: 1.5;
+  font-size: 9pt;
+  width: 100%;
+  height: 100%;
+}
+
+.line-below {
+  border-bottom: 2px solid #bbb;
+}
+
+.line-above-bold {
+  border-top: 4px solid #bbb;
+}
+
+.border-black {
+  border-color: black;
+}
+
+.line-above {
+  border-top: 2px solid #bbb;
+}
+
+.block-right {
+  margin-left: 40px;
+}
+
+.block,
+.block > * {
+  width: 100%;
+}
+
+.entity-info,
+.entity-address,
+.entity-billing-info,
+.block {
+  margin-top: 1em;
+  margin-bottom: 1em;
+}
+
+.space-around {
+  justify-content: space-around;
+}
+
+.space-between,
+.block,
+.header {
+  display: flex;
+}
+
+.space-between,
+.block {
+  justify-content: space-between;
+}
+
+.text-grayed {
+  color: #555;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  border-spacing: 0;
+}
+
+.invoice-items {
+  width: 100%;
+  margin-bottom: 3rem;
+}
+
+.align-right {
+  text-align: right;
+}
+
+.no-wrap {
+  white-space: nowrap;
+}
+
+td, th {
+  padding: 8px;
+}
+
+.text-big {
+  font-size: 1.5rem;
+}
+
+.text-bold {
+  font-weight: bold;
+}
+
+.note {
+  position: absolute;
+  bottom: 0;
+}
+
+.qr {
+    width: 50mm;
+}

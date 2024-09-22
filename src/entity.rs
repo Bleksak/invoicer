@@ -1,10 +1,11 @@
 use std::fmt::Display;
 
-use serde::Serialize;
+use maud::html;
+use serde::{Deserialize, Serialize};
 
 use crate::{address::Address, registration_number::RegistrationNumber};
 
-#[derive(Debug, Serialize, Clone, Copy)]
+#[derive(Debug, Serialize, Deserialize, Clone, Copy)]
 pub enum EntityType {
     Contractor,
     Client,
@@ -12,14 +13,16 @@ pub enum EntityType {
 
 impl Display for EntityType {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.write_str(match self {
-            EntityType::Contractor => "DODAVATEL",
-            EntityType::Client => "ODBĚRATEL",
-        })
+        f.write_str(
+            match self {
+                EntityType::Contractor => "DODAVATEL",
+                EntityType::Client => "ODBĚRATEL",
+            },
+        )
     }
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct Entity {
     pub identifier: RegistrationNumber,
     pub name: String,
@@ -41,6 +44,35 @@ impl Entity {
             address,
             vat_number,
         }
+    }
+
+    pub fn to_html(&self) -> maud::Markup {
+        html!(
+            div class="entity-info" {
+                strong class="entity-name" { (self.name) }
+
+                div class="entity-address" {
+                    p class="text-grayed" { (self.address.get_first_line()) };
+                    p class="text-grayed" { (self.address.get_second_line()) };
+                }
+
+                div class="entity-billing-info" {
+                    div class="space-between" {
+                        p class="text-grayed" { "IČO" };
+                        p { (self.identifier) };
+                    }
+
+                    div class="space-between" {
+                        @if let Some(vat_number) = &self.vat_number {
+                                p class="text-grayed" { "DPH" };
+                                p { (vat_number) };
+                        } @else {
+                            p { "Neplátce DPH" }
+                        }
+                    }
+                }
+            }
+        )
     }
 }
 

@@ -3,8 +3,7 @@ use serde::{Deserialize, Serialize};
 use crate::{address::Address, entity::Entity, registration_number::RegistrationNumber};
 use std::io::Read;
 
-// #[derive(Debug, Serialize, Deserialize)]
-// pub struct AresListOfRegistrations {
+// #[derive(Debug, Serialize, Deserialize)] pub struct AresListOfRegistrations {
 //     #[serde(rename = "stavZdrojeVr")]
 //     vr: String,
 //
@@ -60,10 +59,10 @@ pub struct AresSidlo {
     region_name: String,
 
     #[serde(rename = "kodOkresu")]
-    district_code: u32,
+    district_code: Option<u32>,
 
     #[serde(rename = "nazevOkresu")]
-    district_name: String,
+    district_name: Option<String>,
 
     #[serde(rename = "kodObce")]
     municipality_code: u32,
@@ -149,6 +148,7 @@ pub struct AresResponse {
     dic: Option<String>,
 }
 
+/// Fetches data from ARES registry
 pub fn fetch_from_ares(number: RegistrationNumber) -> anyhow::Result<Entity> {
     let url = format!(
         "https://ares.gov.cz/ekonomicke-subjekty-v-be/rest/ekonomicke-subjekty/{}",
@@ -161,23 +161,42 @@ pub fn fetch_from_ares(number: RegistrationNumber) -> anyhow::Result<Entity> {
 
     let ares_response: AresResponse = serde_json::from_str(&result)?;
 
-    Ok(Entity::new(
-        number,
-        ares_response.name,
-        Address::new(
-            ares_response
-                .office
-                .city_part
-                .map(|x| x.split('-').collect::<Vec<&str>>().join(" - "))
-                .unwrap_or(ares_response.office.municipality_name),
-            ares_response
-                .office
-                .street
-                .unwrap_or(ares_response.office.municipality_part_name),
-            ares_response.office.postal_code.to_string(),
-            ares_response.office.house_number,
-            ares_response.office.orientation_number,
+    Ok(
+        Entity::new(
+            number,
+            ares_response.name,
+            Address::new(
+                ares_response
+                    .office
+                    .city_part
+                    .map(|x| x.split('-').collect::<Vec<&str>>().join(" - "))
+                    .unwrap_or(ares_response.office.municipality_name),
+                ares_response
+                    .office
+                    .street
+                    .unwrap_or(ares_response.office.municipality_part_name),
+                ares_response.office.postal_code.to_string(),
+                ares_response.office.house_number,
+                ares_response.office.orientation_number,
+            ),
+            ares_response.dic,
         ),
-        ares_response.dic,
-    ))
+    )
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::RegistrationNumber;
+
+    #[test]
+    fn test_fetch_from_ares() {
+        let registration_number: RegistrationNumber =
+            "27082440".parse().expect("Invalid registration number");
+        let result =
+            super::fetch_from_ares(registration_number).expect("Failed to fetch from ARES");
+        assert_eq!(
+            result.name,
+            "Alza.cz a.s."
+        );
+    }
 }
