@@ -1,6 +1,6 @@
 [package]
 name = "invoicero"
-version = "1.0.0"
+version = "1.0.1"
 edition = "2021"
 description = "Crate for generating cz/sk invoices"
 keywords = ["invoice", "czech", "ares", "finance"]
