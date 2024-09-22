@@ -25,5 +25,5 @@ date = "0.1.3"
 chrono = { version = "0.4.38", features = ["serde"] }
 accounting = { version = "0.2.0", features = ["decimal"] }
 fast_qr = { version = "0.12.5", features = ["image"] }
-maud = "*"
+maud = "0.26.0"
 async-std = { version = "1.13.0", features = ["tokio1"] }
