@@ -3,7 +3,7 @@ use std::{error::Error, fmt::Display, str::FromStr};
 use serde::{Deserialize, Serialize};
 
 /// Representation of czech company registration number(IČO).
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq)]
 pub struct RegistrationNumber(String);
 
 #[derive(Debug)]

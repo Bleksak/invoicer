@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 
 /// Represents an address
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq)]
 pub struct Address {
     city: String,
     street: String,

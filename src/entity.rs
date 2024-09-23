@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{address::Address, registration_number::RegistrationNumber};
 
-#[derive(Debug, Serialize, Deserialize, Clone, Copy)]
+#[derive(Debug, Serialize, Deserialize, Clone, Copy, PartialEq, Eq)]
 pub enum EntityType {
     Contractor,
     Client,
@@ -22,7 +22,7 @@ impl Display for EntityType {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq)]
 pub struct Entity {
     pub identifier: RegistrationNumber,
     pub name: String,
