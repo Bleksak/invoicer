@@ -3,11 +3,11 @@ use serde::{Deserialize, Serialize};
 /// Represents an address
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq)]
 pub struct Address {
-    city: String,
-    street: String,
-    postal_code: String,
-    house_number: u32,
-    orientation_number: Option<u32>,
+    pub city: String,
+    pub street: String,
+    pub postal_code: String,
+    pub house_number: u32,
+    pub orientation_number: Option<u32>,
 }
 
 impl Address {
