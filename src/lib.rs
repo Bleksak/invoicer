@@ -1,6 +1,6 @@
 mod accounting;
 pub mod address;
-mod ares;
+pub mod ares;
 pub mod entity;
 pub mod invoice;
 pub mod payment_method;
@@ -22,3 +22,4 @@ pub use address::Address;
 pub use payment_method::PaymentMethod;
 
 pub use time::Time;
+

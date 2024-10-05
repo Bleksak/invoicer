@@ -48,6 +48,10 @@ impl Address {
 
     /// Get the second line of the address
     pub fn get_second_line(&self) -> String {
+        if self.postal_code.len() == 6 {
+            return self.postal_code.clone();
+        }
+
         let mut number_str = format!(
             "{:05}",
             self.postal_code
