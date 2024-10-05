@@ -1,7 +1,10 @@
 use serde::{Deserialize, Serialize};
 
 use crate::{address::Address, entity::Entity, registration_number::RegistrationNumber};
-use std::io::Read;
+use std::{
+    fmt::{Display, Formatter},
+    io::Read,
+};
 
 // #[derive(Debug, Serialize, Deserialize)] pub struct AresListOfRegistrations {
 //     #[serde(rename = "stavZdrojeVr")]
@@ -148,8 +151,25 @@ pub struct AresResponse {
     dic: Option<String>,
 }
 
+#[derive(Debug)]
+pub enum Error {
+    RequestError(reqwest::Error),
+    JsonError(serde_json::Error),
+    BadContent,
+}
+
+impl Display for Error {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Error::RequestError(e) => write!(f, "Request error: {}", e),
+            Error::JsonError(e) => write!(f, "JSON error: {}", e),
+            Error::BadContent => write!(f, "Bad content"),
+        }
+    }
+}
+
 /// Fetches data from ARES registry
-pub fn fetch_from_ares(number: RegistrationNumber) -> anyhow::Result<Entity> {
+pub fn fetch_from_ares(number: RegistrationNumber) -> Result<Entity, Error> {
     let url = format!(
         "https://ares.gov.cz/ekonomicke-subjekty-v-be/rest/ekonomicke-subjekty/{}",
         number.get()
@@ -157,31 +177,32 @@ pub fn fetch_from_ares(number: RegistrationNumber) -> anyhow::Result<Entity> {
 
     let mut result = String::new();
 
-    reqwest::blocking::get(url)?.read_to_string(&mut result)?;
+    reqwest::blocking::get(url)
+        .map_err(Error::RequestError)?
+        .read_to_string(&mut result)
+        .map_err(|_| Error::BadContent)?;
 
-    let ares_response: AresResponse = serde_json::from_str(&result)?;
+    let ares_response: AresResponse = serde_json::from_str(&result).map_err(Error::JsonError)?;
 
-    Ok(
-        Entity::new(
-            number,
-            ares_response.name,
-            Address::new(
-                ares_response
-                    .office
-                    .city_part
-                    .map(|x| x.split('-').collect::<Vec<&str>>().join(" - "))
-                    .unwrap_or(ares_response.office.municipality_name),
-                ares_response
-                    .office
-                    .street
-                    .unwrap_or(ares_response.office.municipality_part_name),
-                ares_response.office.postal_code.to_string(),
-                ares_response.office.house_number,
-                ares_response.office.orientation_number,
-            ),
-            ares_response.dic,
+    Ok(Entity::new(
+        number,
+        ares_response.name,
+        Address::new(
+            ares_response
+                .office
+                .city_part
+                .map(|x| x.split('-').collect::<Vec<&str>>().join(" - "))
+                .unwrap_or(ares_response.office.municipality_name),
+            ares_response
+                .office
+                .street
+                .unwrap_or(ares_response.office.municipality_part_name),
+            ares_response.office.postal_code.to_string(),
+            ares_response.office.house_number,
+            ares_response.office.orientation_number,
         ),
-    )
+        ares_response.dic,
+    ))
 }
 
 #[cfg(test)]
@@ -194,9 +215,6 @@ mod tests {
             "27082440".parse().expect("Invalid registration number");
         let result =
             super::fetch_from_ares(registration_number).expect("Failed to fetch from ARES");
-        assert_eq!(
-            result.name,
-            "Alza.cz a.s."
-        );
+        assert_eq!(result.name, "Alza.cz a.s.");
     }
 }

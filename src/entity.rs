@@ -3,7 +3,7 @@ use std::fmt::Display;
 use maud::html;
 use serde::{Deserialize, Serialize};
 
-use crate::{address::Address, registration_number::RegistrationNumber};
+use crate::{address::Address, ares, registration_number::RegistrationNumber};
 
 #[derive(Debug, Serialize, Deserialize, Clone, Copy, PartialEq, Eq)]
 pub enum EntityType {
@@ -77,7 +77,7 @@ impl Entity {
 }
 
 impl TryFrom<RegistrationNumber> for Entity {
-    type Error = anyhow::Error;
+    type Error = ares::Error;
 
     fn try_from(value: RegistrationNumber) -> Result<Self, Self::Error> {
         use crate::ares;

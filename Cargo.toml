@@ -18,7 +18,6 @@ spayd = "0.2.1"
 rust_decimal = "1.35.0"
 iban_validate = { version = "4.0.1", features = ["serde"] }
 iso_currency = { version = "0.4.4", features = ["with-serde"] }
-anyhow = "1.0.86"
 chrono = { version = "0.4.38", features = ["serde"] }
 accounting = { version = "0.2.0", features = ["decimal"] }
 fast_qr = { version = "0.12.5", features = ["image"] }
