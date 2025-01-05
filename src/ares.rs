@@ -179,6 +179,8 @@ pub fn fetch_from_ares(number: RegistrationNumber) -> Result<Entity, Error> {
 
     reqwest::blocking::get(url)
         .map_err(Error::RequestError)?
+        .error_for_status()
+        .map_err(|_| Error::BadContent)?
         .read_to_string(&mut result)
         .map_err(|_| Error::BadContent)?;
 
