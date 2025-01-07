@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use crate::{address::Address, entity::Entity, registration_number::RegistrationNumber};
+use crate::{address::Address, entity::eu::Entity, registration_number::RegistrationNumber};
 use std::{
     fmt::{Display, Formatter},
     io::Read,

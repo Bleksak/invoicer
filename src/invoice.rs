@@ -1,6 +1,6 @@
 use std::{fmt::Display, process::Command, str::FromStr};
 
-use crate::{accounting, entity::Entity, payment_method::PaymentMethod, time::Time};
+use crate::{accounting, entity::eu::Entity, payment_method::PaymentMethod, time::Time};
 
 use chrono::NaiveDate;
 use fast_qr::{
