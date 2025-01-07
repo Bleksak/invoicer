@@ -1,26 +1,9 @@
-use std::fmt::Display;
-
 use maud::html;
 use serde::{Deserialize, Serialize};
 
 use crate::{address::Address, ares, registration_number::RegistrationNumber};
 
-#[derive(Debug, Serialize, Deserialize, Clone, Copy, PartialEq, Eq)]
-pub enum EntityType {
-    Contractor,
-    Client,
-}
 
-impl Display for EntityType {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.write_str(
-            match self {
-                EntityType::Contractor => "DODAVATEL",
-                EntityType::Client => "ODBĚRATEL",
-            },
-        )
-    }
-}
 
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq)]
 pub struct Entity {
