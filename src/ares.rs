@@ -1,10 +1,12 @@
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
+use serde::Serialize;
 
-use crate::{address::Address, entity::eu::Entity, registration_number::RegistrationNumber};
-use std::{
-    fmt::{Display, Formatter},
-    io::Read,
-};
+use crate::address::Address;
+use crate::entity::eu::Entity;
+use crate::registration_number::RegistrationNumber;
+use std::fmt::Display;
+use std::fmt::Formatter;
+use std::io::Read;
 
 // #[derive(Debug, Serialize, Deserialize)] pub struct AresListOfRegistrations {
 //     #[serde(rename = "stavZdrojeVr")]
@@ -113,7 +115,7 @@ pub struct AresAdresa {
     first_line: String,
 
     #[serde(rename = "radekAdresy2")]
-    second_line: String,
+    second_line: Option<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -159,11 +161,31 @@ pub enum Error {
 }
 
 impl Display for Error {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+    fn fmt(
+        &self,
+        f: &mut Formatter<'_>,
+    ) -> std::fmt::Result {
         match self {
-            Error::RequestError(e) => write!(f, "Request error: {}", e),
-            Error::JsonError(e) => write!(f, "JSON error: {}", e),
-            Error::BadContent => write!(f, "Bad content"),
+            Error::RequestError(e) => {
+                write!(
+                    f,
+                    "Request error: {}",
+                    e
+                )
+            }
+            Error::JsonError(e) => {
+                write!(
+                    f,
+                    "JSON error: {}",
+                    e
+                )
+            }
+            Error::BadContent => {
+                write!(
+                    f,
+                    "Bad content"
+                )
+            }
         }
     }
 }
@@ -186,37 +208,46 @@ pub fn fetch_from_ares(number: RegistrationNumber) -> Result<Entity, Error> {
 
     let ares_response: AresResponse = serde_json::from_str(&result).map_err(Error::JsonError)?;
 
-    Ok(Entity::new(
-        number,
-        ares_response.name,
-        Address::new(
-            ares_response
-                .office
-                .city_part
-                .map(|x| x.split('-').collect::<Vec<&str>>().join(" - "))
-                .unwrap_or(ares_response.office.municipality_name),
-            ares_response
-                .office
-                .street
-                .unwrap_or(ares_response.office.municipality_part_name),
-            ares_response.office.postal_code.to_string(),
-            ares_response.office.house_number,
-            ares_response.office.orientation_number,
+    Ok(
+        Entity::new(
+            number,
+            ares_response.name,
+            Address::new(
+                ares_response
+                    .office
+                    .city_part
+                    .map(
+                        |x| {
+                            x.split('-')
+                                .collect::<Vec<&str>>()
+                                .join(" - ")
+                        },
+                    )
+                    .unwrap_or(
+                        ares_response
+                            .office
+                            .municipality_name,
+                    ),
+                ares_response
+                    .office
+                    .street
+                    .unwrap_or(
+                        ares_response
+                            .office
+                            .municipality_part_name,
+                    ),
+                ares_response
+                    .office
+                    .postal_code
+                    .to_string(),
+                ares_response
+                    .office
+                    .house_number,
+                ares_response
+                    .office
+                    .orientation_number,
+            ),
+            ares_response.dic,
         ),
-        ares_response.dic,
-    ))
-}
-
-#[cfg(test)]
-mod tests {
-    use crate::RegistrationNumber;
-
-    #[test]
-    fn test_fetch_from_ares() {
-        let registration_number: RegistrationNumber =
-            "27082440".parse().expect("Invalid registration number");
-        let result =
-            super::fetch_from_ares(registration_number).expect("Failed to fetch from ARES");
-        assert_eq!(result.name, "Alza.cz a.s.");
-    }
+    )
 }

@@ -1,17 +1,27 @@
-use std::{fmt::Display, process::Command, str::FromStr};
+use std::fmt::Display;
+use std::process::Command;
+use std::str::FromStr;
 
-use crate::{accounting, entity::eu::Entity, payment_method::PaymentMethod, time::Time};
+use crate::accounting;
+use crate::entity::eu::Entity;
+use crate::payment_method::PaymentMethod;
+use crate::time::Time;
 
 use chrono::NaiveDate;
-use fast_qr::{
-    convert::{svg::SvgBuilder, Builder, Shape},
-    qr,
-};
-use iban::{Iban, IbanLike};
+use fast_qr::convert::svg::SvgBuilder;
+use fast_qr::convert::Builder;
+use fast_qr::convert::Shape;
+use fast_qr::qr;
+use iban::Iban;
+use iban::IbanLike;
 use iso_currency::Currency;
-use maud::{html, PreEscaped, DOCTYPE};
-use rust_decimal::{prelude::FromPrimitive, Decimal};
-use serde::{Deserialize, Serialize};
+use maud::html;
+use maud::PreEscaped;
+use maud::DOCTYPE;
+use rust_decimal::prelude::FromPrimitive;
+use rust_decimal::Decimal;
+use serde::Deserialize;
+use serde::Serialize;
 use spayd::Spayd;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -38,7 +48,10 @@ impl FromStr for InvoiceItemType {
 }
 
 impl Display for InvoiceItemType {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(
+        &self,
+        f: &mut std::fmt::Formatter<'_>,
+    ) -> std::fmt::Result {
         match self {
             InvoiceItemType::Hours(time) => {
                 let result = write!(
@@ -57,16 +70,20 @@ impl Display for InvoiceItemType {
 
                 result
             }
-            InvoiceItemType::Quantity(quantity) => write!(
-                f,
-                "{} ks",
-                quantity
-            ),
-            InvoiceItemType::Other(other) => write!(
-                f,
-                "{}",
-                other
-            ),
+            InvoiceItemType::Quantity(quantity) => {
+                write!(
+                    f,
+                    "{} ks",
+                    quantity
+                )
+            }
+            InvoiceItemType::Other(other) => {
+                write!(
+                    f,
+                    "{}",
+                    other
+                )
+            }
         }
     }
 }
@@ -91,7 +108,10 @@ impl InvoiceItem {
         }
     }
 
-    pub fn to_html(&self, accounting: &accounting::Accounting) -> maud::Markup {
+    pub fn to_html(
+        &self,
+        accounting: &accounting::Accounting,
+    ) -> maud::Markup {
         html!(
             div class="invoice-item" {
                 td class="align-right no-wrap" {
@@ -142,15 +162,23 @@ impl FromStr for InvoiceItem {
     fn from_str(value: &str) -> Result<Self, Self::Err> {
         let mut parts = value.split(' ');
 
-        let item_type = parts.next().ok_or("No item type")?;
-        let price_per_unit = parts.next().ok_or("No price per unit")?;
-        let description = parts.collect::<Vec<&str>>().join(" ");
+        let item_type = parts
+            .next()
+            .ok_or("No item type")?;
+        let price_per_unit = parts
+            .next()
+            .ok_or("No price per unit")?;
+        let description = parts
+            .collect::<Vec<&str>>()
+            .join(" ");
 
         Ok(
             Self::new(
                 InvoiceItemType::from_str(item_type)?,
                 description,
-                price_per_unit.parse().or(Err("Invalid price"))?,
+                price_per_unit
+                    .parse()
+                    .or(Err("Invalid price"))?,
             ),
         )
     }
@@ -198,13 +226,19 @@ impl Invoice {
 }
 
 impl Invoice {
-    fn qr_code(&self, items_sum: &Decimal) -> Option<String> {
+    fn qr_code(
+        &self,
+        items_sum: &Decimal,
+    ) -> Option<String> {
         if let PaymentMethod::BankTransfer(symbol) = &self.payment_method {
             let spayd = Spayd::new_v1_0(
                 [
                     (
                         spayd::fields::ACCOUNT,
-                        &self.iban.electronic_str().to_string(),
+                        &self
+                            .iban
+                            .electronic_str()
+                            .to_string(),
                     ),
                     (
                         spayd::fields::AMOUNT,
@@ -212,7 +246,10 @@ impl Invoice {
                     ),
                     (
                         spayd::fields::CURRENCY,
-                        &self.currency.code().to_string(),
+                        &self
+                            .currency
+                            .code()
+                            .to_string(),
                     ),
                     (
                         "X-VS", symbol,
@@ -242,7 +279,11 @@ impl Invoice {
         let ac = accounting::create_accounting_from_currency(self.currency);
         let fmt = "%d. %m. %Y";
 
-        let items_sum: Decimal = self.items.iter().map(|x| x.price()).sum();
+        let items_sum: Decimal = self
+            .items
+            .iter()
+            .map(|x| x.price())
+            .sum();
 
         let qr_code = self.qr_code(&items_sum);
 
@@ -388,16 +429,25 @@ impl Invoice {
         )
     }
 
-    pub fn to_pdf(&self, filename: &str) -> Option<()> {
+    pub fn to_pdf(
+        &self,
+        filename: &str,
+    ) -> Option<()> {
         Command::new("weasyprint")
             .arg(
                 format!(
                     "data:text/html,{}",
-                    self.to_html().into_string()
+                    self.to_html()
+                        .into_string()
                 ),
             )
             .arg("-u")
-            .arg(std::fs::canonicalize(".").unwrap().to_str().unwrap())
+            .arg(
+                std::fs::canonicalize(".")
+                    .unwrap()
+                    .to_str()
+                    .unwrap(),
+            )
             .arg(filename)
             .output()
             .ok()

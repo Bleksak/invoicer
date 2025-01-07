@@ -1,6 +1,7 @@
 use std::str::FromStr;
 
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
+use serde::Serialize;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Time(
@@ -9,7 +10,10 @@ pub struct Time(
 );
 
 impl Time {
-    pub fn new(hours: u32, minutes: u32) -> Self {
+    pub fn new(
+        hours: u32,
+        minutes: u32,
+    ) -> Self {
         Self(
             hours, minutes,
         )

@@ -1,6 +1,7 @@
 use std::fmt::Display;
 
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
+use serde::Serialize;
 
 pub mod eu;
 pub mod us;
@@ -18,7 +19,6 @@ pub enum Entity {
     Brazil,
     Argentina,
     Africa,
-
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, Copy, PartialEq, Eq)]
@@ -28,7 +28,10 @@ pub enum EntityType {
 }
 
 impl Display for EntityType {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(
+        &self,
+        f: &mut std::fmt::Formatter<'_>,
+    ) -> std::fmt::Result {
         f.write_str(
             match self {
                 EntityType::Contractor => "DODAVATEL",

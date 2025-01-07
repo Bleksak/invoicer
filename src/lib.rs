@@ -22,4 +22,3 @@ pub use address::Address;
 pub use payment_method::PaymentMethod;
 
 pub use time::Time;
-

@@ -3,8 +3,12 @@ use iso_currency::Currency;
 
 pub fn create_accounting_from_currency(currency: Currency) -> Accounting {
     let mut ac = Accounting::new_from(
-        &currency.symbol().to_string(),
-        currency.exponent().unwrap_or(2) as usize,
+        &currency
+            .symbol()
+            .to_string(),
+        currency
+            .exponent()
+            .unwrap_or(2) as usize,
     );
 
     match currency {

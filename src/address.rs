@@ -1,4 +1,5 @@
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
+use serde::Serialize;
 
 /// Represents an address
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq)]
@@ -48,8 +49,14 @@ impl Address {
 
     /// Get the second line of the address
     pub fn get_second_line(&self) -> String {
-        if self.postal_code.len() == 6 {
-            return self.postal_code.clone();
+        if self
+            .postal_code
+            .len()
+            == 6
+        {
+            return self
+                .postal_code
+                .clone();
         }
 
         let mut number_str = format!(

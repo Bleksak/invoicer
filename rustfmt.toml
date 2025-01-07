@@ -1,0 +1,15 @@
+# max_width = 50
+imports_granularity = "Item"
+combine_control_expr = false
+fn_params_layout = "Vertical"
+force_multiline_blocks = true
+
+struct_lit_width = 0
+struct_variant_width = 0
+fn_call_width = 0
+attr_fn_like_width = 0
+array_width = 0
+chain_width = 0
+single_line_if_else_max_width = 0
+single_line_let_else_max_width = 0
+inline_attribute_width = 0

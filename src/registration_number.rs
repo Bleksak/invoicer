@@ -1,6 +1,9 @@
-use std::{error::Error, fmt::Display, str::FromStr};
+use std::error::Error;
+use std::fmt::Display;
+use std::str::FromStr;
 
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
+use serde::Serialize;
 
 /// Representation of czech company registration number(IČO).
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq)]
@@ -12,12 +15,17 @@ pub enum RegistrationNumberError {
 }
 
 impl Display for RegistrationNumberError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(
+        &self,
+        f: &mut std::fmt::Formatter<'_>,
+    ) -> std::fmt::Result {
         match self {
-            RegistrationNumberError::InvalidNumber => write!(
-                f,
-                "Neplatné IČO"
-            ),
+            RegistrationNumberError::InvalidNumber => {
+                write!(
+                    f,
+                    "Neplatné IČO"
+                )
+            }
         }
     }
 }
@@ -27,10 +35,17 @@ impl Error for RegistrationNumberError {}
 impl RegistrationNumber {
     /// Checks if the Czech registration number is valid.
     fn valid(number: &str) -> Option<()> {
-        let control_char = number.chars().last()?;
+        let control_char = number
+            .chars()
+            .last()?;
         let mut calculated_control = 0;
 
-        for (i, ch) in number.chars().rev().skip(1).enumerate() {
+        for (i, ch) in number
+            .chars()
+            .rev()
+            .skip(1)
+            .enumerate()
+        {
             let digit: u32 = ch.to_digit(10)?;
 
             let weight = i + 2;
@@ -54,8 +69,12 @@ impl RegistrationNumber {
 }
 
 impl Display for RegistrationNumber {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        self.0.fmt(f)
+    fn fmt(
+        &self,
+        f: &mut std::fmt::Formatter<'_>,
+    ) -> std::fmt::Result {
+        self.0
+            .fmt(f)
     }
 }
 
@@ -90,7 +109,9 @@ mod tests {
 
         assert!(number.is_ok());
         assert_eq!(
-            number.unwrap().get(),
+            number
+                .unwrap()
+                .get(),
             "27082440"
         );
     }
