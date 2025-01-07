@@ -20,7 +20,7 @@ impl Display for Error {
             Self::Invalid => {
                 write!(
                     f,
-                    "Nesprávné TIN"
+                    "Invalid TIN/EIN"
                 )
             }
         }
