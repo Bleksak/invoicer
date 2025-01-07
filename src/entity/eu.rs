@@ -1,9 +1,12 @@
 use maud::html;
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
+use serde::Serialize;
 
-use crate::{address::Address, ares, registration_number::RegistrationNumber};
+use crate::address::Address;
+use crate::ares;
+use crate::registration_number::RegistrationNumber;
 
-
+pub enum Error {}
 
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq)]
 pub struct Entity {
@@ -17,15 +20,15 @@ pub struct Entity {
 impl Entity {
     pub fn new(
         identifier: RegistrationNumber,
-        name: String,
+        name: impl Into<String>,
         address: Address,
-        vat_number: Option<String>,
+        vat_number: Option<impl Into<String>>,
     ) -> Self {
         Self {
             identifier,
-            name,
+            name: name.into(),
             address,
-            vat_number,
+            vat_number: vat_number.map(|s| s.into()),
         }
     }
 
